@@ -11,26 +11,26 @@ param managedIdentityName string
 @description('Managed Identity Principal ID')
 param managedIdentityPrincipalId string
 
+@description('Azure AD Administrator Object ID')
+param adminObjectId string = ''
+
+@description('Azure AD Administrator Login Name')
+param adminLogin string = ''
+
 // Variables
 var sqlServerName = 'sql-expensemgmt-${environmentSuffix}'
 var sqlDatabaseName = 'ExpenseManagementDB'
-
-// Get current user context for Azure AD admin
-var currentUser = {
-  login: az.resourceGroup().managedBy != null ? 'admin@contoso.com' : 'SQLAdmin'
-  sid: 'your-object-id-here'
-}
 
 // Azure SQL Server
 resource sqlServer 'Microsoft.Sql/servers@2022-05-01-preview' = {
   name: sqlServerName
   location: location
   properties: {
-    administrators: {
+    administrators: empty(adminObjectId) ? null : {
       administratorType: 'ActiveDirectory'
       azureADOnlyAuthentication: true
-      login: currentUser.login
-      sid: currentUser.sid
+      login: adminLogin
+      sid: adminObjectId
       tenantId: subscription().tenantId
       principalType: 'User'
     }

@@ -10,6 +10,12 @@ param environmentSuffix string = utcNow('ddHHmm')
 @description('Whether to deploy GenAI resources')
 param deployGenAI bool = false
 
+@description('Azure AD Administrator Object ID (optional - if not provided, SQL will not have AD admin configured)')
+param sqlAdminObjectId string = ''
+
+@description('Azure AD Administrator Login Name (optional)')
+param sqlAdminLogin string = ''
+
 // App Service and Managed Identity
 module appService 'app-service.bicep' = {
   name: 'appServiceDeployment'
@@ -27,6 +33,8 @@ module sqlDatabase 'sql.bicep' = {
     environmentSuffix: environmentSuffix
     managedIdentityName: appService.outputs.managedIdentityName
     managedIdentityPrincipalId: appService.outputs.managedIdentityPrincipalId
+    adminObjectId: sqlAdminObjectId
+    adminLogin: sqlAdminLogin
   }
 }
 

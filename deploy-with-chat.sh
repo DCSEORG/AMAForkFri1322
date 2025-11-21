@@ -28,6 +28,14 @@ az group create \
 echo "✅ Resource group created/verified"
 echo ""
 
+# Get current user info for SQL AD admin
+echo "🔍 Getting current user information for SQL AD admin..."
+CURRENT_USER_OBJECT_ID=$(az ad signed-in-user show --query id -o tsv)
+CURRENT_USER_UPN=$(az ad signed-in-user show --query userPrincipalName -o tsv)
+echo "  User: $CURRENT_USER_UPN"
+echo "  Object ID: $CURRENT_USER_OBJECT_ID"
+echo ""
+
 # Deploy infrastructure (WITH GenAI)
 echo "🚀 Deploying infrastructure with GenAI resources..."
 echo "   (This may take several minutes)"
@@ -35,6 +43,8 @@ DEPLOYMENT_OUTPUT=$(az deployment group create \
   --resource-group $RESOURCE_GROUP \
   --template-file bicep/main.bicep \
   --parameters environmentSuffix=$TIMESTAMP deployGenAI=true \
+               sqlAdminObjectId=$CURRENT_USER_OBJECT_ID \
+               sqlAdminLogin=$CURRENT_USER_UPN \
   --query 'properties.outputs' \
   --output json)
 
@@ -82,18 +92,24 @@ echo "📦 Importing database schema..."
 echo "  Note: Schema import requires Azure AD authentication"
 echo "  Running SQL setup script..."
 
-# Update script.sql with managed identity name
-sed -i.bak "s/MANAGED-IDENTITY-NAME/$MANAGED_IDENTITY_NAME/g" script.sql && rm -f script.sql.bak
+# Create temporary copy of script.sql with managed identity name
+cp script.sql script.sql.tmp
+sed -i.bak "s/MANAGED-IDENTITY-NAME/$MANAGED_IDENTITY_NAME/g" script.sql.tmp && rm -f script.sql.tmp.bak
 
 # Install required Python packages if not already installed
 pip3 install --quiet pyodbc azure-identity
 
-# Update run-sql.py with actual server and database names
-sed -i.bak "s/sql-expense-mgmt-xyz.database.windows.net/${SQL_SERVER_NAME}.database.windows.net/g" run-sql.py && rm -f run-sql.py.bak
-sed -i.bak "s/ExpenseManagementDB/${SQL_DATABASE_NAME}/g" run-sql.py && rm -f run-sql.py.bak
+# Create temporary copy of run-sql.py with actual server and database names
+cp run-sql.py run-sql.py.tmp
+sed -i.bak "s/sql-expense-mgmt-xyz.database.windows.net/${SQL_SERVER_NAME}.database.windows.net/g" run-sql.py.tmp && rm -f run-sql.py.tmp.bak
+sed -i.bak "s/ExpenseManagementDB/${SQL_DATABASE_NAME}/g" run-sql.py.tmp && rm -f run-sql.py.tmp.bak
+sed -i.bak "s/script.sql/script.sql.tmp/g" run-sql.py.tmp && rm -f run-sql.py.tmp.bak
 
 # Run the Python script
-python3 run-sql.py
+python3 run-sql.py.tmp
+
+# Clean up temporary files
+rm -f script.sql.tmp run-sql.py.tmp
 
 echo "✅ Database schema imported"
 echo ""

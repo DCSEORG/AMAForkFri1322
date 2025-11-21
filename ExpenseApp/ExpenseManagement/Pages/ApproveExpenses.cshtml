@@ -1,0 +1,97 @@
+@page
+@model ApproveExpensesModel
+@{
+    ViewData["Title"] = "Approve Expenses";
+}
+
+<div class="container mt-4">
+    <h1 class="h2 mb-4">Approve Expenses</h1>
+
+    @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            @Model.ErrorMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            @Model.SuccessMessage
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <h5 class="card-title mb-3">Pending expenses:</h5>
+            <form method="get" class="row g-3">
+                <div class="col-md-10">
+                    <label for="filter" class="form-label">Filter:</label>
+                    <input type="text" class="form-control" id="filter" name="filter" value="@Model.FilterText" placeholder="Search by category or description...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-secondary w-100">Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th>Category</th>
+                            <th>Amount</th>
+                            <th>Description</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model.PendingExpenses.Any())
+                        {
+                            @foreach (var expense in Model.PendingExpenses)
+                            {
+                                <tr>
+                                    <td>@expense.ExpenseDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@expense.CategoryName</td>
+                                    <td>£@expense.Amount.ToString("F2")</td>
+                                    <td>@(string.IsNullOrEmpty(expense.Description) ? "-" : expense.Description)</td>
+                                    <td>
+                                        <form method="post" class="d-inline">
+                                            <input type="hidden" name="expenseId" value="@expense.ExpenseId" />
+                                            <button type="submit" asp-page-handler="Approve" class="btn btn-sm btn-success me-2">
+                                                <i class="bi bi-check-circle"></i> Approve
+                                            </button>
+                                            <button type="submit" asp-page-handler="Reject" class="btn btn-sm btn-danger">
+                                                <i class="bi bi-x-circle"></i> Reject
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    No pending expenses to review
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-3">
+        <a href="/Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Back to Expenses
+        </a>
+    </div>
+</div>
